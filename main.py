@@ -25,6 +25,8 @@ def get_secret_key() -> str:
         with open(pathlib.Path(__file__).parent / 'data' / 'secret_key.pickle', 'rb') as fin:
             key = pickle.load(fin)
             return key
+    except FileNotFoundError:
+        logging.info('secret key file not found, generating new key')
     except Exception as e:
         logging.warning('failed to get secret key', exc_info=e)
 

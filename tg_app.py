@@ -18,9 +18,12 @@ def get_registered_users() -> set[int]:
         with open(pathlib.Path(__file__).parent / 'data' / 'allowed_users.pickle', 'rb') as fin:
             data = pickle.load(fin)
             return data
+    except FileNotFoundError:
+        logging.info('file with known users not found')
     except Exception as e:
         logging.warning('failed to get registered users', exc_info=e)
-        return set()
+
+    return set()
 
 
 def save_registered_users(users: set[int]):
