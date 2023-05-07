@@ -87,6 +87,13 @@ class TGAppController:
         )
 
     async def get_servers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_user.id not in self.users:
+            await update.effective_message.reply_text(
+                text="Нет доступа к просмотру серверов. Чтобы получить доступ нужно использовать команду /register",
+                parse_mode='Markdown',
+            )
+            return
+
         known_servers = servers.get_servers(self.active_timeout)
 
         if len(known_servers) == 0:
