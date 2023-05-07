@@ -2,15 +2,13 @@ import logging
 import math
 import pathlib
 import pickle
-from datetime import timedelta
 
 import telegram.ext
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 
+import config
 import servers
-
-TOKEN = '6234708778:AAHmdLhG9kxtY2WWQc8MNJViIdpr33AXRhE'
 
 
 def get_registered_users() -> set[int]:
@@ -32,11 +30,11 @@ def save_registered_users(users: set[int]):
 
 
 class TGAppController:
-    def __init__(self, secret_key: str, active_timeout: timedelta):
+    def __init__(self, secret_key: str, cfg: config.Config):
         self.users = get_registered_users()
         self.secret_key = secret_key
-        self.application = ApplicationBuilder().token(TOKEN).build()
-        self.active_timeout = active_timeout
+        self.application = ApplicationBuilder().token(cfg.bot_token).build()
+        self.active_timeout = cfg.server_active_period
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(

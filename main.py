@@ -41,6 +41,7 @@ def get_secret_key() -> str:
 def load_config() -> config.Config:
     raw_values = dotenv.dotenv_values()
     return config.Config(
+        bot_token=raw_values.get('BOT_TOKEN', ''),
         log_level=raw_values.get('LOG_LEVEL', 'INFO').upper(),
         host=raw_values.get('HOST', '127.0.0.1'),
         port=int(raw_values.get('PORT', '8000')),
@@ -55,7 +56,7 @@ async def main():
     setup_logging(cfg)
 
     secret_key = get_secret_key()
-    tgac = tg_app.TGAppController(secret_key, cfg.server_active_period)
+    tgac = tg_app.TGAppController(secret_key, cfg)
 
     tg = tgac.get_tg_app()
     fa = fa_app.create_app(tgac, secret_key)

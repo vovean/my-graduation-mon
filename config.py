@@ -4,6 +4,8 @@ from datetime import timedelta
 
 @dataclass
 class Config:
+    bot_token: str
+
     '''
     Допустимые уровни:
         CRITICAL
