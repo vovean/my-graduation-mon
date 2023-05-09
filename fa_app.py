@@ -17,7 +17,7 @@ class ImaliveResponse(BaseModel):
     code: int
 
 
-def create_app(tg_app: TGAppController, secret_key: str) -> fastapi.FastAPI:
+def create_app(tg_app: TGAppController, secret_key: str, sm: servers.Manager) -> fastapi.FastAPI:
     app = FastAPI()
 
     @app.post("/imalive")
@@ -25,9 +25,11 @@ def create_app(tg_app: TGAppController, secret_key: str) -> fastapi.FastAPI:
         if body.token != secret_key:
             return ImaliveResponse(message="invalid token", code=403)
 
-        is_new = servers.set_active_now(request.client.host)
-        if is_new:
+        server_state = sm.set_server_active(request.client.host)
+        if server_state == servers.SERVER_NEW:
             asyncio.create_task(tg_app.notify_users_on_new_server(request.client.host))
+        elif server_state == servers.SERVER_ACTIVE_AGAIN:
+            asyncio.create_task(tg_app.notify_users_server_active_again(request.client.host))
 
         return ImaliveResponse(message="ok", code=200)
 

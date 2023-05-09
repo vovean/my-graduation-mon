@@ -10,6 +10,7 @@ import uvicorn
 
 import config
 import fa_app
+import servers
 import tg_app
 
 
@@ -55,11 +56,13 @@ async def main():
     cfg = load_config()
     setup_logging(cfg)
 
+    sm = servers.Manager(active_period=cfg.server_active_period)
+
     secret_key = get_secret_key()
-    tgac = tg_app.TGAppController(secret_key, cfg)
+    tgac = tg_app.TGAppController(secret_key, cfg, sm)
 
     tg = tgac.get_tg_app()
-    fa = fa_app.create_app(tgac, secret_key)
+    fa = fa_app.create_app(tgac, secret_key, sm)
 
     webserver = uvicorn.Server(
         config=uvicorn.Config(

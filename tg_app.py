@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 import pathlib
@@ -30,11 +31,11 @@ def save_registered_users(users: set[int]):
 
 
 class TGAppController:
-    def __init__(self, secret_key: str, cfg: config.Config):
+    def __init__(self, secret_key: str, cfg: config.Config, sm: servers.Manager):
         self.users = get_registered_users()
         self.secret_key = secret_key
         self.application = ApplicationBuilder().token(cfg.bot_token).build()
-        self.active_timeout = cfg.server_active_period
+        self.sm = sm
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
@@ -57,6 +58,14 @@ class TGAppController:
             await self.application.bot.send_message(
                 chat_id=user,
                 text=f'Зарегистрирован новый сервер: `{server}`',
+                parse_mode='Markdown',
+            )
+
+    async def notify_users_server_active_again(self, server: str):
+        for user in self.users:
+            await self.application.bot.send_message(
+                chat_id=user,
+                text=f'Сервер снова активен: `{server}`',
                 parse_mode='Markdown',
             )
 
@@ -92,7 +101,7 @@ class TGAppController:
             )
             return
 
-        known_servers = servers.get_servers(self.active_timeout)
+        known_servers = self.sm.get_servers()
 
         if len(known_servers) == 0:
             await update.effective_message.reply_text(
@@ -112,7 +121,20 @@ class TGAppController:
             parse_mode='Markdown',
         )
 
+    async def notify_on_server_getting_inactive(self, _: telegram.ext.CallbackContext):
+        inactive_to_notify = self.sm.get_inactive_not_notified()
+        for server in inactive_to_notify:
+            for user in self.users:
+                await self.application.bot.send_message(
+                    chat_id=user,
+                    text=f'Сервер стал неактивным: `{server}`',
+                    parse_mode='Markdown',
+                )
+                await asyncio.sleep(0.05)
+        self.sm.set_inactive_notified(inactive_to_notify)
+
     def get_tg_app(self) -> telegram.ext.Application:
+        self.application.job_queue.run_repeating(self.notify_on_server_getting_inactive, interval=1)
         self.application.add_handlers([
             CommandHandler('start', self.start),
             CommandHandler('register', self.register),
